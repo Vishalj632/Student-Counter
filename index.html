@@ -10,23 +10,28 @@
         body { text-align: center; font-family: Arial, sans-serif; }
         video, canvas { width: 80%; max-width: 600px; display: block; margin: auto; }
         #count { font-weight: bold; color: green; }
+        button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
     </style>
 </head>
 <body>
     <h1>Students in Class: <span id="count">0</span></h1>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
+    <button id="switch-camera">Switch Camera</button>
 
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const countDisplay = document.getElementById('count');
+        const switchCameraButton = document.getElementById('switch-camera');
+
+        let currentFacingMode = 'environment'; // Default to back camera
 
         async function setupCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: { ideal: 'environment' } } // Use back camera on mobile
+                    video: { facingMode: { ideal: currentFacingMode } }
                 });
                 video.srcObject = stream;
                 return new Promise(resolve => video.onloadedmetadata = resolve);
@@ -50,6 +55,11 @@
 
             detect();
         }
+
+        switchCameraButton.addEventListener('click', async () => {
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            await setupCamera(); // Restart camera with new facing mode
+        });
 
         setupCamera().then(detectPeople);
     </script>
