@@ -9,50 +9,46 @@
     <style>
         body { text-align: center; font-family: Arial, sans-serif; }
         video, canvas { width: 80%; max-width: 600px; display: block; margin: auto; }
-        button { margin-top: 10px; padding: 10px 20px; font-size: 16px; }
+        #count { font-weight: bold; color: green; }
     </style>
 </head>
 <body>
     <h1>Students in Class: <span id="count">0</span></h1>
     <video id="video" autoplay playsinline></video>
     <canvas id="canvas"></canvas>
-    <button id="capture">Capture Photo</button>
-    
+
     <script>
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         const countDisplay = document.getElementById('count');
-        const captureButton = document.getElementById('capture');
-        
+
         async function setupCamera() {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            video.srcObject = stream;
-            return new Promise(resolve => video.onloadedmetadata = resolve);
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                return new Promise(resolve => video.onloadedmetadata = resolve);
+            } catch (error) {
+                alert('Camera access error: ' + error.message);
+            }
         }
-        
+
         async function detectPeople() {
-            const model = await cocoSsd.load();
+            const cocoModel = await cocoSsd.load();
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-            
-            captureButton.addEventListener('click', async () => {
+
+            async function detect() {
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const predictions = await model.detect(canvas);
+                const predictions = await cocoModel.detect(canvas);
                 const people = predictions.filter(p => p.class === 'person');
                 countDisplay.textContent = people.length;
-                
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                
-                people.forEach(p => {
-                    ctx.strokeStyle = 'red';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(p.bbox[0], p.bbox[1], p.bbox[2], p.bbox[3]);
-                });
-            });
+                requestAnimationFrame(detect); // Continuous detection
+            }
+
+            detect();
         }
-        
+
         setupCamera().then(detectPeople);
     </script>
 </body>
